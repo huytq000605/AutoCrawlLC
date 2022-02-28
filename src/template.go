@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,8 +25,8 @@ func template(question *questionType) string {
 
 </details>
 
-%s
-	`, question.id, question.title, question.difficulty, getContent(question.content), getTopics(question.topics), getHints(question.hints))
+%s`,
+		question.id, question.title, question.difficulty, getContent(question.content), getTopics(question.topics), getHints(question.hints))
 }
 
 func getContent(content string) string {
@@ -93,7 +94,7 @@ func downloadAllFiles(urls []string) ([]string, error) {
 
 		var file *os.File
 		if _, err := os.Stat(fileName); err == nil {
-			panic("File already exists")
+			return nil, errors.New("File is already exists")
 		} else {
 			file, err = os.Create(fileName)
 			if err != nil {
