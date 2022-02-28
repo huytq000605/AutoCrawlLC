@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 )
 
@@ -21,7 +22,7 @@ func main() {
 	leetcode := "https://leetcode.com/graphql"
 	puzzle := "sliding-window-maximum"
 	query := []byte(fmt.Sprintf(`
-	{"operationName":"questionData","variables":{"titleSlug":"%s"},"query":"query questionData($titleSlug: String!) {\n  question(titleSlug: $titleSlug) {\n  title\n  content\n  difficulty\n   topicTags { name\n }\n   hints\n }\n}\n"}
+	{"operationName":"questionData","variables":{"titleSlug":"%s"},"query":"query questionData($titleSlug: String!) {\n  question(titleSlug: $titleSlug) {\n  title\n  content\n  difficulty\n questionFrontendId\n   topicTags { name\n }\n   hints\n }\n}\n"}
 	`, puzzle))
 	req, err := http.NewRequest("POST", leetcode, bytes.NewBuffer(query))
 	req.Header.Add("Content-Type", "application/json")
@@ -47,7 +48,7 @@ func main() {
 
 	question.content = questionInResponse["content"].(string)
 	question.difficulty = questionInResponse["difficulty"].(string)
-	question.title = questionInResponse["title"].(string)
+	question.title = questionInResponse["questionFrontendId"].(string) + ". " + questionInResponse["title"].(string)
 
 	topicTags := questionInResponse["topicTags"].([]interface{})
 	question.topics = make([]string, len(topicTags))
@@ -61,6 +62,11 @@ func main() {
 		question.hints[idx] = hint.(string)
 	}
 
-	fmt.Println(question)
+	err = os.WriteFile("test.md", []byte(template(question)), 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	// fmt.Println(template(question))
 
 }
