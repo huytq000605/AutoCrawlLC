@@ -12,7 +12,7 @@ func main() {
 	}
 	parts := strings.Split(args[0], "/")
 	var puzzle string
-	for puzzle == "" {
+	for puzzle == "" || puzzle == "submissions" {
 		puzzle = parts[len(parts)-1]
 		parts = parts[:len(parts)-1]
 	}
