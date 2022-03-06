@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"sync"
 )
 
 type questionType struct {
@@ -18,7 +19,7 @@ type questionType struct {
 	hints      []string
 }
 
-func fetch(puzzle string) (*questionType, error) {
+func fetchQuestion(puzzle string) (*questionType, error) {
 	leetcode := "https://leetcode.com/graphql"
 	query := []byte(fmt.Sprintf(`
 	{"operationName":"questionData","variables":{"titleSlug":"%s"},"query":"query questionData($titleSlug: String!) {\n  question(titleSlug: $titleSlug) {\n  title\n  content\n  difficulty\n questionFrontendId\n   topicTags { name\n }\n   hints\n }\n}\n"}
@@ -66,4 +67,62 @@ func fetch(puzzle string) (*questionType, error) {
 		return nil, err
 	}
 	return &question, nil
+}
+
+func fetchContest(contest string) ([]*questionType, error) {
+	leetcode := fmt.Sprintf("https://leetcode.com/contest/api/info/%s/", contest)
+	resp, err := http.Get(leetcode)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var responseMap map[string]interface{}
+	json.Unmarshal(body, &responseMap)
+
+	questionMap := responseMap["questions"].([]interface{})
+	puzzles := make([]string, 0)
+
+	for _, question := range questionMap {
+		puzzle := question.(map[string]interface{})["title_slug"].(string)
+		puzzles = append(puzzles, puzzle)
+	}
+
+	doneChan := make(chan struct{})
+	errChan := make(chan error)
+	var wg sync.WaitGroup
+	var mutex sync.Mutex
+	questions := make([]*questionType, 0)
+
+	for _, puzzle := range puzzles {
+		wg.Add(1)
+		go func(puzzle string) {
+			defer wg.Done()
+			question, err := fetchQuestion(puzzle)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			mutex.Lock()
+			questions = append(questions, question)
+			mutex.Unlock()
+		}(puzzle)
+	}
+
+	go func() {
+		wg.Wait()
+		doneChan <- struct{}{}
+	}()
+
+	select {
+	case <-doneChan:
+		return questions, nil
+	case err := <-errChan:
+		return nil, err
+	}
 }

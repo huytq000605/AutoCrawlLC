@@ -26,16 +26,16 @@ func template(question *questionType) string {
 </details>
 
 %s`,
-		question.id, question.title, question.difficulty, getContent(question.content), getTopics(question.topics), getHints(question.hints))
+		question.id, question.title, question.difficulty, getContent(question.title, question.content), getTopics(question.topics), getHints(question.hints))
 }
 
-func getContent(content string) string {
+func getContent(title, content string) string {
 	r, err := regexp.Compile(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
 	if err != nil {
 		panic(err)
 	}
 	urls := r.FindAllString(content, -1)
-	files, err := downloadAllFiles(urls)
+	files, err := downloadAllFiles(title, urls)
 	if err != nil {
 		panic(err)
 	}
@@ -71,16 +71,13 @@ func getHints(hints []string) string {
 	return result[1:]
 }
 
-func downloadAllFiles(urls []string) ([]string, error) {
+func downloadAllFiles(title string, urls []string) ([]string, error) {
 	if len(urls) == 0 {
 		return []string{}, nil
 	}
 	result := make([]string, len(urls))
-	os.Mkdir("assets", 07777)
-	err := os.Chdir("assets")
-	if err != nil {
-		return nil, err
-	}
+	assetsDir := filepath.Join(title, "assets")
+	os.Mkdir(assetsDir, 07777)
 
 	for idx, url := range urls {
 		resp, err := http.Get(url)
@@ -93,10 +90,10 @@ func downloadAllFiles(urls []string) ([]string, error) {
 		result[idx] = fileName
 
 		var file *os.File
-		if _, err := os.Stat(fileName); err == nil {
+		if _, err := os.Stat(filepath.Join(assetsDir, fileName)); err == nil {
 			return nil, errors.New("File is already exists")
 		} else {
-			file, err = os.Create(fileName)
+			file, err = os.Create(filepath.Join(assetsDir, fileName))
 			if err != nil {
 				return nil, err
 			}
@@ -107,6 +104,5 @@ func downloadAllFiles(urls []string) ([]string, error) {
 			return nil, err
 		}
 	}
-	os.Chdir("..")
 	return result, nil
 }
