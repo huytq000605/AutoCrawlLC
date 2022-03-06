@@ -94,7 +94,7 @@ func fetchContest(contest string) ([]*questionType, error) {
 
 	doneChan := make(chan struct{})
 	errChan := make(chan error)
-	questionChan := make(chan *questionType)
+	questionChan := make(chan questionType)
 	var wg sync.WaitGroup
 	questions := make([]*questionType, 0)
 
@@ -107,7 +107,7 @@ func fetchContest(contest string) ([]*questionType, error) {
 				errChan <- err
 				return
 			}
-			questionChan <- question
+			questionChan <- *question
 		}(puzzle)
 	}
 
@@ -119,7 +119,7 @@ func fetchContest(contest string) ([]*questionType, error) {
 	for {
 		select {
 		case question := <-questionChan:
-			questions = append(questions, question)
+			questions = append(questions, &question)
 		case <-doneChan:
 			return questions, nil
 		case err := <-errChan:
