@@ -94,8 +94,8 @@ func fetchContest(contest string) ([]*questionType, error) {
 
 	doneChan := make(chan struct{})
 	errChan := make(chan error)
+	questionChan := make(chan *questionType)
 	var wg sync.WaitGroup
-	var mutex sync.Mutex
 	questions := make([]*questionType, 0)
 
 	for _, puzzle := range puzzles {
@@ -107,10 +107,7 @@ func fetchContest(contest string) ([]*questionType, error) {
 				errChan <- err
 				return
 			}
-
-			mutex.Lock()
-			questions = append(questions, question)
-			mutex.Unlock()
+			questionChan <- question
 		}(puzzle)
 	}
 
@@ -119,10 +116,14 @@ func fetchContest(contest string) ([]*questionType, error) {
 		doneChan <- struct{}{}
 	}()
 
-	select {
-	case <-doneChan:
-		return questions, nil
-	case err := <-errChan:
-		return nil, err
+	for {
+		select {
+		case question := <-questionChan:
+			questions = append(questions, question)
+		case <-doneChan:
+			return questions, nil
+		case err := <-errChan:
+			return nil, err
+		}
 	}
 }
