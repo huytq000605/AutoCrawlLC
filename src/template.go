@@ -41,6 +41,9 @@ func getContent(title, content string) string {
 	}
 
 	for i := 0; i < len(files); i++ {
+		if files[i] == urls[i] {
+			continue
+		}
 		content = strings.Replace(content, urls[i], fmt.Sprintf("./assets/%s", files[i]), 1)
 	}
 
