@@ -40,7 +40,7 @@ func getContent(title, content string) string {
 		panic(err)
 	}
 
-	for i := 0; i < len(urls); i++ {
+	for i := 0; i < len(files); i++ {
 		content = strings.Replace(content, urls[i], fmt.Sprintf("./assets/%s", files[i]), 1)
 	}
 
@@ -75,24 +75,24 @@ func downloadAllFiles(title string, urls []string) ([]string, error) {
 	if len(urls) == 0 {
 		return []string{}, nil
 	}
-	fileNames := make([]string, 0)
+	fileNames := make([]string, len(urls))
 	assetsDir := filepath.Join(title, "assets")
 	os.Mkdir(assetsDir, 07777)
 
-	for idx, url := range urls {
-		resp, err := http.Get(url)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
+	ignore := 0
 
+	for idx, url := range urls {
 		acceptedExtensions := []string{".apng", ".avif", ".gif", ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp"}
 		extension := filepath.Ext(url)
 
 		if include(acceptedExtensions, extension) {
-			fileName := fmt.Sprintf("image%d%s", idx+1, filepath.Ext(url))
-
-			fileNames = append(fileNames, fileName)
+			resp, err := http.Get(url)
+			if err != nil {
+				return nil, err
+			}
+			defer resp.Body.Close()
+			fileName := fmt.Sprintf("image%d%s", idx+1, extension)
+			fileNames[idx] = fileName
 
 			var file *os.File
 			if _, err := os.Stat(filepath.Join(assetsDir, fileName)); err == nil {
@@ -108,7 +108,13 @@ func downloadAllFiles(title string, urls []string) ([]string, error) {
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			fileNames[idx] = urls[idx]
+			ignore += 1
 		}
+	}
+	if ignore == len(urls) {
+		os.Remove(assetsDir)
 	}
 	return fileNames, nil
 }
