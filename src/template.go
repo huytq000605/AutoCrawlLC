@@ -75,7 +75,7 @@ func downloadAllFiles(title string, urls []string) ([]string, error) {
 	if len(urls) == 0 {
 		return []string{}, nil
 	}
-	result := make([]string, len(urls))
+	fileNames := make([]string, 0)
 	assetsDir := filepath.Join(title, "assets")
 	os.Mkdir(assetsDir, 07777)
 
@@ -86,23 +86,38 @@ func downloadAllFiles(title string, urls []string) ([]string, error) {
 		}
 		defer resp.Body.Close()
 
-		fileName := fmt.Sprintf("image%d%s", idx+1, filepath.Ext(url))
-		result[idx] = fileName
+		acceptedExtensions := []string{".apng", ".avif", ".gif", ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp"}
+		extension := filepath.Ext(url)
 
-		var file *os.File
-		if _, err := os.Stat(filepath.Join(assetsDir, fileName)); err == nil {
-			return nil, errors.New("File is already exists")
-		} else {
-			file, err = os.Create(filepath.Join(assetsDir, fileName))
+		if include(acceptedExtensions, extension) {
+			fileName := fmt.Sprintf("image%d%s", idx+1, filepath.Ext(url))
+
+			fileNames = append(fileNames, fileName)
+
+			var file *os.File
+			if _, err := os.Stat(filepath.Join(assetsDir, fileName)); err == nil {
+				return nil, errors.New("File is already exists")
+			} else {
+				file, err = os.Create(filepath.Join(assetsDir, fileName))
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			_, err = io.Copy(file, resp.Body)
 			if err != nil {
 				return nil, err
 			}
 		}
+	}
+	return fileNames, nil
+}
 
-		_, err = io.Copy(file, resp.Body)
-		if err != nil {
-			return nil, err
+func include(slice []string, s string) bool {
+	for _, str := range slice {
+		if s == str {
+			return true
 		}
 	}
-	return result, nil
+	return false
 }
