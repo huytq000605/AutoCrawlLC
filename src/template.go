@@ -85,7 +85,7 @@ func downloadAllFiles(title string, urls []string) ([]string, error) {
 	ignore := 0
 
 	for idx, url := range urls {
-		acceptedExtensions := []string{".apng", ".avif", ".gif", ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp"}
+		acceptedExtensions := []string{".apng", ".avif", ".gif", ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp", ".png"}
 		extension := filepath.Ext(url)
 
 		if include(acceptedExtensions, extension) {
