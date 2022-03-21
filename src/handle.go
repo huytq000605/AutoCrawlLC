@@ -6,13 +6,13 @@ import (
 	"sync"
 )
 
-func handleQuestion(question *questionType) error {
-	err := os.Mkdir(question.title, 07777)
+func handleQuestion(question *question) error {
+	err := os.Mkdir(question.Title, 07777)
 	if err != nil {
 		return err
 	}
 
-	err = os.WriteFile(fmt.Sprintf("%s/question.md", question.title), []byte(template(question)), 0644)
+	err = os.WriteFile(fmt.Sprintf("%s/question.md", question.Title), []byte(template(question)), 0644)
 	if err != nil {
 		return err
 	}
@@ -21,24 +21,24 @@ func handleQuestion(question *questionType) error {
 		return err
 	}
 
-	fmt.Println(fmt.Sprintf("Crawled %s successfuly", question.title))
+	fmt.Println(fmt.Sprintf("Crawled %s successfuly", question.Title))
 	return nil
 }
 
-func handleQuestions(questions []*questionType) error {
+func handleQuestions(questions []*question) error {
 	// errChan := make(chan error)
 	var wg sync.WaitGroup
-	for _, question := range questions {
+	for _, q := range questions {
 		wg.Add(1)
-		go func(question *questionType) {
+		go func(q *question) {
 			defer wg.Done()
-			err := handleQuestion(question)
+			err := handleQuestion(q)
 			if err != nil {
 				// errChan <- err
 				fmt.Println(err)
 				return
 			}
-		}(question)
+		}(q)
 	}
 	wg.Wait()
 	return nil

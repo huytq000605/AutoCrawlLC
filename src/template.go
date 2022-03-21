@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func template(question *questionType) string {
+func template(question *question) string {
 	return fmt.Sprintf(`
 # %s. %s<br> %s
 
@@ -26,7 +26,7 @@ func template(question *questionType) string {
 </details>
 
 %s`,
-		question.id, question.title, question.difficulty, getContent(question.title, question.content), getTopics(question.topics), getHints(question.hints))
+		question.Id, question.Title, question.Difficulty, getContent(question.Title, question.Content), getTopics(question), getHints(question.Hints))
 }
 
 func getContent(title, content string) string {
@@ -50,14 +50,14 @@ func getContent(title, content string) string {
 	return content
 }
 
-func getTopics(topics []string) string {
-	if len(topics) == 0 {
+func getTopics(q *question) string {
+	if len(q.Topics) == 0 {
 		return ""
 	}
 	result := ""
-	for _, topic := range topics {
+	for _, topic := range q.Topics {
 		result += "\n"
-		result += fmt.Sprintf("-\t`%s`", topic)
+		result += fmt.Sprintf("-\t`%s`", topic.Name)
 	}
 	return result[1:]
 }

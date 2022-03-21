@@ -10,16 +10,24 @@ import (
 	"sync"
 )
 
-type questionType struct {
-	id         string
-	content    string
-	title      string
-	difficulty string
-	topics     []string
-	hints      []string
+type question struct {
+	Id         string `json:"questionFrontendId"`
+	Content    string `json:"content"`
+	Title      string `json:"title"`
+	Difficulty string `json:"difficulty"`
+	Topics     []struct {
+		Name string `json:"name"`
+	} `json:"topicTags"`
+	Hints []string `json:"hints"`
 }
 
-func fetchQuestion(puzzle string) (*questionType, error) {
+type leetcodeResponse struct {
+	Data struct {
+		Question question `json:"question"`
+	} `json:"data"`
+}
+
+func fetchQuestion(puzzle string) (*question, error) {
 	leetcode := "https://leetcode.com/graphql"
 	query := []byte(fmt.Sprintf(`
 	{"operationName":"questionData","variables":{"titleSlug":"%s"},"query":"query questionData($titleSlug: String!) {\n  question(titleSlug: $titleSlug) {\n  title\n  content\n  difficulty\n questionFrontendId\n   topicTags { name\n }\n   hints\n }\n}\n"}
@@ -39,37 +47,16 @@ func fetchQuestion(puzzle string) (*questionType, error) {
 		return nil, err
 	}
 
-	var responseMap map[string]interface{}
-	json.Unmarshal(body, &responseMap)
-
-	questionInResponse := responseMap["data"].(map[string]interface{})["question"].(map[string]interface{})
-
-	question := questionType{}
-
-	question.content = questionInResponse["content"].(string)
-	question.difficulty = questionInResponse["difficulty"].(string)
-	question.title = questionInResponse["title"].(string)
-	question.id = questionInResponse["questionFrontendId"].(string)
-
-	topicTags := questionInResponse["topicTags"].([]interface{})
-	question.topics = make([]string, len(topicTags))
-	for idx, topicTag := range topicTags {
-		question.topics[idx] = topicTag.(map[string]interface{})["name"].(string)
-	}
-
-	hints := questionInResponse["hints"].([]interface{})
-	question.hints = make([]string, len(hints))
-	for idx, hint := range hints {
-		question.hints[idx] = hint.(string)
-	}
+	responseParsed := leetcodeResponse{}
+	err = json.Unmarshal(body, &responseParsed)
 
 	if err != nil {
 		return nil, err
 	}
-	return &question, nil
+	return &responseParsed.Data.Question, nil
 }
 
-func fetchContest(contest string) ([]*questionType, error) {
+func fetchContest(contest string) ([]*question, error) {
 	leetcode := fmt.Sprintf("https://leetcode.com/contest/api/info/%s/", contest)
 	resp, err := http.Get(leetcode)
 	if err != nil {
@@ -94,9 +81,9 @@ func fetchContest(contest string) ([]*questionType, error) {
 
 	doneChan := make(chan struct{})
 	errChan := make(chan error)
-	questionChan := make(chan questionType)
+	questionChan := make(chan question)
 	var wg sync.WaitGroup
-	questions := make([]*questionType, 0)
+	questions := make([]*question, 0)
 
 	for _, puzzle := range puzzles {
 		wg.Add(1)
