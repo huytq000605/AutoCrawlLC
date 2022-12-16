@@ -19,11 +19,7 @@ func main() {
 
 	switch parts[2] {
 	case "problems":
-		var puzzle string
-		for puzzle == "" || puzzle == "submissions" {
-			puzzle = parts[len(parts)-1]
-			parts = parts[:len(parts)-1]
-		}
+		puzzle := parts[3]
 
 		question, err := fetchQuestion(puzzle)
 		if err != nil {
@@ -36,7 +32,7 @@ func main() {
 		}
 
 	case "contest":
-		contest := parts[len(parts)-1]
+		contest := parts[3]
 
 		questions, err := fetchContest(contest)
 		if err != nil {
