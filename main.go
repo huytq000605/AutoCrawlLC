@@ -3,9 +3,27 @@ package main
 import (
 	"os"
 	"strings"
+  "flag"
+  "fmt"
 )
 
+func parseFlag() (cookieFilePath string){
+  path := flag.String("c", "", "cookie")
+  if *path == "" {
+    *path = "cookie_lc"
+  }
+  return *path
+}
+
 func main() {
+  cookiePath := parseFlag()
+  cookieBytes, err := os.ReadFile(cookiePath)
+  if err != nil {
+    fmt.Println("No cookie found")
+  }
+  // Strip newline at end of file
+  cookie := strings.ReplaceAll(string(cookieBytes), "\n", "")
+
 	args := os.Args[1:]
 	if len(args) == 0 {
 		panic("Please input link")
@@ -20,8 +38,7 @@ func main() {
 	switch parts[2] {
 	case "problems":
 		puzzle := parts[3]
-
-		question, err := fetchQuestion(puzzle)
+		question, err := fetchQuestion(puzzle, cookie)
 		if err != nil {
 			panic(err)
 		}
@@ -34,7 +51,7 @@ func main() {
 	case "contest":
 		contest := parts[3]
 
-		questions, err := fetchContest(contest)
+		questions, err := fetchContest(contest, cookie)
 		if err != nil {
 			panic(err)
 		}
@@ -44,7 +61,6 @@ func main() {
 			panic(err)
 		}
 	}
-
 }
 
 func removeBlankString(slice *[]string) {
