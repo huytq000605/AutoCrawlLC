@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,7 +28,11 @@ type leetcodeResponse struct {
 	} `json:"data"`
 }
 
-func fetchQuestion(puzzle, cookie string) (*question, error) {
+var (
+	errContentBlank = errors.New("Question content is blank, please double check cookies if this is premium question")
+)
+
+func fetchQuestion(puzzle string, cookies []*Cookie) (*question, error) {
 	leetcode := "https://leetcode.com/graphql"
 	query := []byte(fmt.Sprintf(`
 	{"operationName":"questionData","variables":{"titleSlug":"%s"},"query":"query questionData($titleSlug: String!) {\n  question(titleSlug: $titleSlug) {\n  title\n  content\n  difficulty\n questionFrontendId\n   topicTags { name\n }\n   hints\n }\n}\n"}
@@ -35,7 +40,16 @@ func fetchQuestion(puzzle, cookie string) (*question, error) {
 	req, err := http.NewRequest("POST", leetcode, bytes.NewBuffer(query))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Content-Length", strconv.FormatInt(req.ContentLength, 10))
-  req.Header.Add("cookie", cookie)
+
+	for _, cookie := range cookies {
+		req.AddCookie(&http.Cookie{
+			Name:   cookie.Name,
+			Value:  cookie.Value,
+			Path:   cookie.Path,
+			Secure: cookie.Secure,
+			Domain: cookie.Domain,
+		})
+	}
 
 	client := http.Client{}
 	resp, err := client.Do(req)
@@ -54,10 +68,13 @@ func fetchQuestion(puzzle, cookie string) (*question, error) {
 	if err != nil {
 		return nil, err
 	}
+	if responseParsed.Data.Question.Content == "" {
+		return nil, errContentBlank
+	}
 	return &responseParsed.Data.Question, nil
 }
 
-func fetchContest(contest, cookie string) ([]*question, error) {
+func fetchContest(contest string, cookies []*Cookie) ([]*question, error) {
 	leetcode := fmt.Sprintf("https://leetcode.com/contest/api/info/%s/", contest)
 	resp, err := http.Get(leetcode)
 	if err != nil {
@@ -90,7 +107,7 @@ func fetchContest(contest, cookie string) ([]*question, error) {
 		wg.Add(1)
 		go func(puzzle string) {
 			defer wg.Done()
-			question, err := fetchQuestion(puzzle, cookie)
+			question, err := fetchQuestion(puzzle, cookies)
 			if err != nil {
 				errChan <- err
 				return
