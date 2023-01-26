@@ -41,11 +41,11 @@ func main() {
 		panic(err)
 	}
 
-	args := os.Args[1:]
+  args := flag.Args()
 	if len(args) == 0 {
 		panic("Please input link")
 	}
-	parts := strings.Split(args[len(args)-1], "/")
+	parts := strings.Split(args[0], "/")
 	if len(parts) < 4 {
 		panic("The URL is not correct")
 	}
