@@ -54,9 +54,7 @@ func ExtractCookies() error {
 	var username, password string
 
 	done := make(chan struct{})
-	defer close(done)
 	errChan := make(chan error)
-	defer close(errChan)
 
 	go func() {
 		username, password, err = getUsernameAndPassword()
@@ -154,23 +152,37 @@ func login(driver selenium.WebDriver, usernameText, passwordText string) ([]sele
 	if err != nil {
 		return nil, err
 	}
-	username.Clear()
-	username.Click()
-	username.SendKeys(usernameText)
+	if err := username.Clear(); err != nil {
+		return nil, err
+	}
+	if err := username.Click(); err != nil {
+		return nil, err
+	}
+	if err := username.SendKeys(usernameText); err != nil {
+		return nil, err
+	}
 
 	password, err := driver.FindElement(selenium.ByID, "id_password")
 	if err != nil {
 		return nil, err
 	}
-	username.Clear()
-	password.Click()
-	password.SendKeys(passwordText)
+	if err := username.Clear(); err != nil {
+		return nil, err
+	}
+	if err := password.Click(); err != nil {
+		return nil, err
+	}
+	if err := password.SendKeys(passwordText); err != nil {
+		return nil, err
+	}
 
 	signInButton, err := driver.FindElement(selenium.ByID, "signin_btn")
 	if err != nil {
 		return nil, err
 	}
-	signInButton.Click()
+	if err := signInButton.Click(); err != nil {
+		return nil, err
+	}
 
 	if err = driver.WaitWithTimeoutAndInterval(
 		func(wd selenium.WebDriver) (bool, error) {
@@ -181,6 +193,12 @@ func login(driver selenium.WebDriver, usernameText, passwordText string) ([]sele
 			}
 			return navbar.IsDisplayed()
 		}, timeout, pollInterval); err != nil {
+		if err := username.Clear(); err != nil {
+			return nil, err
+		}
+		if err := password.Clear(); err != nil {
+			return nil, err
+		}
 		return nil, errWrongCredentials
 	}
 

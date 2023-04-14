@@ -41,7 +41,7 @@ func main() {
 		panic(err)
 	}
 
-  args := flag.Args()
+	args := flag.Args()
 	if len(args) == 0 {
 		panic("Please input link")
 	}

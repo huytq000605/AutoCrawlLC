@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"sync"
 )
 
 type question struct {
@@ -97,16 +96,12 @@ func fetchContest(contest string, cookies []*Cookie) ([]*question, error) {
 		puzzles = append(puzzles, puzzle)
 	}
 
-	doneChan := make(chan struct{})
 	errChan := make(chan error)
 	questionChan := make(chan question)
-	var wg sync.WaitGroup
-	questions := make([]*question, 0)
+	questions := make([]*question, 0, len(puzzles))
 
 	for _, puzzle := range puzzles {
-		wg.Add(1)
 		go func(puzzle string) {
-			defer wg.Done()
 			question, err := fetchQuestion(puzzle, cookies)
 			if err != nil {
 				errChan <- err
@@ -116,17 +111,13 @@ func fetchContest(contest string, cookies []*Cookie) ([]*question, error) {
 		}(puzzle)
 	}
 
-	go func() {
-		wg.Wait()
-		doneChan <- struct{}{}
-	}()
-
 	for {
 		select {
 		case question := <-questionChan:
 			questions = append(questions, &question)
-		case <-doneChan:
-			return questions, nil
+			if len(questions) == len(puzzles) {
+				return questions, nil
+			}
 		case err := <-errChan:
 			return nil, err
 		}
