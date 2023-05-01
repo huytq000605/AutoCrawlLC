@@ -31,17 +31,17 @@ func main() {
 			panic(err)
 		}
 	}
+	var cookies []*Cookie
 	cookieJson, err := os.ReadFile(_cookiePath)
 	if err != nil {
 		fmt.Println("No cookie found")
+	} else {
+		if err := json.Unmarshal(cookieJson, &cookies); err != nil {
+			panic(err)
+		}
 	}
 
-	var cookies []*Cookie
-	if err := json.Unmarshal(cookieJson, &cookies); err != nil {
-		panic(err)
-	}
-
-  args := flag.Args()
+	args := flag.Args()
 	if len(args) == 0 {
 		panic("Please input link")
 	}
