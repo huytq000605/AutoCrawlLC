@@ -152,7 +152,7 @@ func login(driver selenium.WebDriver, usernameText, passwordText string) ([]sele
 	if err != nil {
 		return nil, err
 	}
-  // Clearing username & password fields if they have values
+	// Clearing username & password fields if they have values
 	if err := username.Click(); err != nil {
 		return nil, err
 	}
@@ -173,7 +173,6 @@ func login(driver selenium.WebDriver, usernameText, passwordText string) ([]sele
 	if err := password.SendKeys(selenium.ControlKey + "a" + selenium.BackspaceKey); err != nil {
 		return nil, err
 	}
-  time.Sleep(50 * time.Millisecond)
 	if err := password.SendKeys(passwordText); err != nil {
 		return nil, err
 	}

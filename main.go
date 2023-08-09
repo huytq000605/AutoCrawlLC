@@ -31,14 +31,14 @@ func main() {
 			panic(err)
 		}
 	}
+	var cookies []*Cookie
 	cookieJson, err := os.ReadFile(_cookiePath)
 	if err != nil {
 		fmt.Println("No cookie found")
-	}
-
-	var cookies []*Cookie
-	if err := json.Unmarshal(cookieJson, &cookies); err != nil {
-		panic(err)
+	} else {
+		if err := json.Unmarshal(cookieJson, &cookies); err != nil {
+			panic(err)
+		}
 	}
 
 	args := flag.Args()
