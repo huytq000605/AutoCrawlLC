@@ -152,10 +152,11 @@ func login(driver selenium.WebDriver, usernameText, passwordText string) ([]sele
 	if err != nil {
 		return nil, err
 	}
-	if err := username.Clear(); err != nil {
+  // Clearing username & password fields if they have values
+	if err := username.Click(); err != nil {
 		return nil, err
 	}
-	if err := username.Click(); err != nil {
+	if err := username.SendKeys(selenium.ControlKey + "a" + selenium.BackspaceKey); err != nil {
 		return nil, err
 	}
 	if err := username.SendKeys(usernameText); err != nil {
@@ -166,12 +167,13 @@ func login(driver selenium.WebDriver, usernameText, passwordText string) ([]sele
 	if err != nil {
 		return nil, err
 	}
-	if err := username.Clear(); err != nil {
-		return nil, err
-	}
 	if err := password.Click(); err != nil {
 		return nil, err
 	}
+	if err := password.SendKeys(selenium.ControlKey + "a" + selenium.BackspaceKey); err != nil {
+		return nil, err
+	}
+  time.Sleep(50 * time.Millisecond)
 	if err := password.SendKeys(passwordText); err != nil {
 		return nil, err
 	}
@@ -193,12 +195,6 @@ func login(driver selenium.WebDriver, usernameText, passwordText string) ([]sele
 			}
 			return navbar.IsDisplayed()
 		}, timeout, pollInterval); err != nil {
-		if err := username.Clear(); err != nil {
-			return nil, err
-		}
-		if err := password.Clear(); err != nil {
-			return nil, err
-		}
 		return nil, errWrongCredentials
 	}
 
