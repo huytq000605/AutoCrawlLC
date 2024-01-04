@@ -12,22 +12,25 @@ const (
 	_cookiePath = "./cookie_lc"
 )
 
-func parseFlag() (needLogin bool) {
+func parseFlag() (needLogin bool, manualLogin bool) {
 	flag.BoolVar(&needLogin, "l", false, "Need login flag")
+  flag.BoolVar(&manualLogin, "m", false, "Manual login flag")
 	flag.Visit(func(f *flag.Flag) {
-		fmt.Println(f)
 		if f.Name == "l" || f.Name == "login" {
 			needLogin = true
 		}
+    if f.Name == "m" || f.Name == "manual" {
+      manualLogin = true
+    }
 	})
 	flag.Parse()
-	return needLogin
+	return needLogin, manualLogin
 }
 
 func main() {
-	needLogin := parseFlag()
+	needLogin, manualLogin := parseFlag()
 	if needLogin {
-		if err := ExtractCookies(); err != nil {
+		if err := ExtractCookies(manualLogin); err != nil {
 			panic(err)
 		}
 	}

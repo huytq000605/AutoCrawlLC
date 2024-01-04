@@ -23,11 +23,14 @@ type Cookie struct {
 
 var (
 	errWrongCredentials = errors.New("Invalid username or password")
+  errManualLogin = errors.New("Manual Login error")
+
+  timeoutManualLogin = 120 * time.Second
 	timeout             = 5 * time.Second
 	pollInterval        = 500 * time.Millisecond
 )
 
-func ExtractCookies() error {
+func ExtractCookies(manualLogin bool) error {
 	service, err := selenium.NewChromeDriverService("./chromedriver", 4444)
 	if err != nil {
 		return err
@@ -57,11 +60,14 @@ func ExtractCookies() error {
 	errChan := make(chan error)
 
 	go func() {
-		username, password, err = getUsernameAndPassword()
-		if err != nil {
-			errChan <- err
-			return
-		}
+    // If not manual login, get username and password
+    if !manualLogin {
+      username, password, err = getUsernameAndPassword()
+      if err != nil {
+        errChan <- err
+        return
+      }
+    }
 		done <- struct{}{}
 	}()
 
@@ -75,32 +81,53 @@ func ExtractCookies() error {
 		return err
 	}
 
-	cookies, err := login(driver, username, password)
-	if errors.Is(err, errWrongCredentials) {
-		fmt.Println("Wrong username/password, please try again")
-		for retry := 0; retry < 2; retry++ {
-			username, password, err = getUsernameAndPassword()
-			if err != nil {
-				return err
-			}
-			cookies, err = login(driver, username, password)
-			if err != nil {
-				if errors.Is(err, errWrongCredentials) {
-					fmt.Println("Wrong username/password, please try again")
-					continue
-				}
-				return err
-			}
-			err = nil
-			break
-		}
-		fmt.Println("Retried 3 times. Please check username/password before try again")
-		return errWrongCredentials
-	}
+  var cookies []selenium.Cookie
 
-	if err != nil {
-		return err
-	}
+  if manualLogin {
+    if err = driver.WaitWithTimeoutAndInterval(
+      func(wd selenium.WebDriver) (bool, error) {
+        navbar, err := driver.FindElement(selenium.ByID, "home-app")
+        fmt.Println("Login...")
+        if err != nil || navbar == nil {
+          return false, nil
+        }
+        return navbar.IsDisplayed()
+      }, timeoutManualLogin, pollInterval); err != nil {
+      return errManualLogin
+    }
+    cookies, err = driver.GetCookies()
+    if err != nil {
+      return err
+    }
+  } else {
+    cookies, err = login(driver, username, password)
+    if errors.Is(err, errWrongCredentials) {
+      fmt.Println("Wrong username/password, please try again")
+      for retry := 0; retry < 2; retry++ {
+        username, password, err = getUsernameAndPassword()
+        if err != nil {
+          return err
+        }
+        cookies, err = login(driver, username, password)
+        if err != nil {
+          if errors.Is(err, errWrongCredentials) {
+            fmt.Println("Wrong username/password, please try again")
+            continue
+          }
+          return err
+        }
+        err = nil
+        break
+      }
+      fmt.Println("Retried 3 times. Please check username/password before try again")
+      return errWrongCredentials
+    }
+
+    if err != nil {
+      return err
+    }
+  }
+
 
 	httpCookies := make([]*Cookie, 0, len(cookies))
 	for _, cookie := range cookies {
