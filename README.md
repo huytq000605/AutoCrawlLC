@@ -3,7 +3,7 @@
 ## Fetch a specific leetcode question then put them into a Markdown file
 
 ## Manual add cookie for premium questions
-- Visit "https://leetcode.com/accounts/login/"
+- Visit https://leetcode.com/accounts/login/
 - Prevent Chrome auto redirecting so network log is lost by
     - Tick in preserve log
     - Pause recording network
