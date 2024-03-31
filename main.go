@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+  "sync"
 )
 
 const (
@@ -48,42 +49,59 @@ func main() {
 	if len(args) == 0 {
 		panic("Please input link")
 	}
-	parts := strings.Split(args[0], "/")
-	if len(parts) < 4 {
-		panic("The URL is not correct")
-	}
-	removeBlankString(&parts)
+  var wg sync.WaitGroup
+  wg.Add(len(args))
+  for _, link := range args {
+    // TODO: Remove after go1.22
+    link := link
+    go func() {
+      defer func() {
+        if r := recover(); r != nil {
+          fmt.Printf("processing link=%v, recover=%v", link, r)
+        }
 
-	if parts[1] != "leetcode.com" {
-		panic("Please input url from leetcode.com")
-	}
+        wg.Done()
+      }()
+      parts := strings.Split(link, "/")
+      if len(parts) < 4 {
+        panic("The URL is not correct")
+      }
+      removeBlankString(&parts)
 
-	switch parts[2] {
-	case "problems":
-		puzzle := parts[3]
-		question, err := fetchQuestion(puzzle, cookies)
-		if err != nil {
-			panic(err)
-		}
+      if parts[1] != "leetcode.com" {
+        panic("Please input url from leetcode.com")
+      }
 
-		err = handleQuestion(question)
-		if err != nil {
-			panic(err)
-		}
+      switch parts[2] {
+      case "problems":
+        puzzle := parts[3]
+        question, err := fetchQuestion(puzzle, cookies)
+        if err != nil {
+          panic(err)
+        }
 
-	case "contest":
-		contest := parts[3]
+        err = handleQuestion(question)
+        if err != nil {
+          panic(err)
+        }
 
-		questions, err := fetchContest(contest, cookies)
-		if err != nil {
-			panic(err)
-		}
+      case "contest":
+        contest := parts[3]
 
-		err = handleQuestions(questions)
-		if err != nil {
-			panic(err)
-		}
-	}
+        questions, err := fetchContest(contest, cookies)
+        if err != nil {
+          panic(err)
+        }
+
+        err = handleQuestions(questions)
+        if err != nil {
+          panic(err)
+        }
+      }
+    }()
+  }
+
+  wg.Wait()
 }
 
 func removeBlankString(slice *[]string) {
