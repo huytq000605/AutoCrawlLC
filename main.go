@@ -86,6 +86,23 @@ func main() {
         }
 
       case "contest":
+        // Handle specific question from contest
+        if len(parts) >= 6 && 
+          parts[4] == "problems" {
+            puzzle := parts[5]
+            question, err := fetchQuestion(puzzle, cookies)
+            if err != nil {
+              panic(err)
+            }
+
+            err = handleQuestion(question)
+            if err != nil {
+              panic(err)
+            }
+
+            // Return early
+            return
+        }
         contest := parts[3]
 
         questions, err := fetchContest(contest, cookies)
