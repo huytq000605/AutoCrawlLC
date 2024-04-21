@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-  "sync"
+	"sync"
 )
 
 const (
@@ -15,14 +15,14 @@ const (
 
 func parseFlag() (needLogin bool, manualLogin bool) {
 	flag.BoolVar(&needLogin, "l", false, "Need login flag")
-  flag.BoolVar(&manualLogin, "m", false, "Manual login flag")
+	flag.BoolVar(&manualLogin, "m", false, "Manual login flag")
 	flag.Visit(func(f *flag.Flag) {
 		if f.Name == "l" || f.Name == "login" {
 			needLogin = true
 		}
-    if f.Name == "m" || f.Name == "manual" {
-      manualLogin = true
-    }
+		if f.Name == "m" || f.Name == "manual" {
+			manualLogin = true
+		}
 	})
 	flag.Parse()
 	return needLogin, manualLogin
@@ -49,76 +49,76 @@ func main() {
 	if len(args) == 0 {
 		panic("Please input link")
 	}
-  var wg sync.WaitGroup
-  wg.Add(len(args))
-  for _, link := range args {
-    // TODO: Remove after go1.22
-    link := link
-    go func() {
-      defer func() {
-        if r := recover(); r != nil {
-          fmt.Printf("processing link=%v, recover=%v", link, r)
-        }
+	var wg sync.WaitGroup
+	wg.Add(len(args))
+	for _, link := range args {
+		// TODO: Remove after go1.22
+		link := link
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Printf("processing link=%v, recover=%v", link, r)
+				}
 
-        wg.Done()
-      }()
-      parts := strings.Split(link, "/")
-      if len(parts) < 4 {
-        panic("The URL is not correct")
-      }
-      removeBlankString(&parts)
+				wg.Done()
+			}()
+			parts := strings.Split(link, "/")
+			if len(parts) < 4 {
+				panic("The URL is not correct")
+			}
+			removeBlankString(&parts)
 
-      if parts[1] != "leetcode.com" {
-        panic("Please input url from leetcode.com")
-      }
+			if parts[1] != "leetcode.com" {
+				panic("Please input url from leetcode.com")
+			}
 
-      switch parts[2] {
-      case "problems":
-        puzzle := parts[3]
-        question, err := fetchQuestion(puzzle, cookies)
-        if err != nil {
-          panic(err)
-        }
+			switch parts[2] {
+			case "problems":
+				puzzle := parts[3]
+				question, err := fetchQuestion(puzzle, cookies)
+				if err != nil {
+					panic(err)
+				}
 
-        err = handleQuestion(question)
-        if err != nil {
-          panic(err)
-        }
+				err = handleQuestion(question)
+				if err != nil {
+					panic(err)
+				}
 
-      case "contest":
-        // Handle specific question from contest
-        if len(parts) >= 6 && 
-          parts[4] == "problems" {
-            puzzle := parts[5]
-            question, err := fetchQuestion(puzzle, cookies)
-            if err != nil {
-              panic(err)
-            }
+			case "contest":
+				// Handle specific question from contest
+				if len(parts) >= 6 &&
+					parts[4] == "problems" {
+					puzzle := parts[5]
+					question, err := fetchQuestion(puzzle, cookies)
+					if err != nil {
+						panic(err)
+					}
 
-            err = handleQuestion(question)
-            if err != nil {
-              panic(err)
-            }
+					err = handleQuestion(question)
+					if err != nil {
+						panic(err)
+					}
 
-            // Return early
-            return
-        }
-        contest := parts[3]
+					// Return early
+					return
+				}
+				contest := parts[3]
 
-        questions, err := fetchContest(contest, cookies)
-        if err != nil {
-          panic(err)
-        }
+				questions, err := fetchContest(contest, cookies)
+				if err != nil {
+					panic(err)
+				}
 
-        err = handleQuestions(questions)
-        if err != nil {
-          panic(err)
-        }
-      }
-    }()
-  }
+				err = handleQuestions(questions)
+				if err != nil {
+					panic(err)
+				}
+			}
+		}()
+	}
 
-  wg.Wait()
+	wg.Wait()
 }
 
 func removeBlankString(slice *[]string) {
