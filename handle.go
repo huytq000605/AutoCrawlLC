@@ -7,6 +7,14 @@ import (
 )
 
 func handleQuestion(question *question) error {
+	var success bool
+	defer func() {
+		if(!success) {
+			os.RemoveAll(question.Title)
+		}
+	}()
+
+
 	err := os.Mkdir(question.Title, 07777)
 	if err != nil {
 		return err
@@ -21,6 +29,7 @@ func handleQuestion(question *question) error {
 		return err
 	}
 
+	success = true
 	fmt.Println(fmt.Sprintf("Crawled %s successfuly", question.Title))
 	return nil
 }
